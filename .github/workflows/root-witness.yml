@@ -1,0 +1,50 @@
+name: root-witness
+on:
+  schedule:
+    - cron: '47 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: root-witness
+  cancel-in-progress: false
+jobs:
+  witness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install pyjwt
+        run: pip install -q pyjwt
+      - name: cosign checkpoint (U1见证人;公仓仅hash)
+        env:
+          HUB_KEY: ${{ secrets.CI_OPS_HUB_KEY }}
+          HUB_ID: ${{ vars.CI_OPS_HUB_ID }}
+        run: |
+          pip -q install pyjwt
+          python3 - <<'PYEOF'
+          import jwt,time,json,os,datetime,urllib.request,hashlib,base64
+          now=int(time.time())
+          t=jwt.encode({'iat':now-90,'exp':now+540,'iss':os.environ['HUB_ID']},os.environ['HUB_KEY'],algorithm='RS256')
+          rq=urllib.request.Request('https://api.github.com/app/installations/154355791/access_tokens',method='POST',headers={'Authorization':'Bearer '+t,'Accept':'application/vnd.github+json'})
+          IT=json.load(urllib.request.urlopen(rq))['token']
+          B='https://api.github.com/repos/chepin-ai'
+          def getc(repo,path):
+              r=urllib.request.Request(f'{B}/{repo}/contents/{path}',headers={'Authorization':'token '+IT,'Accept':'application/vnd.github+json'})
+              try:
+                  x=urllib.request.urlopen(r); return json.loads(base64.b64decode(json.loads(x.read().decode())['content']).decode())
+              except Exception: return None
+          cp=getc('ci-control','bridge/chain/checkpoint-latest.json')
+          if not cp: print('no checkpoint'); raise SystemExit(0)
+          ts=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+          wit={'witness':'vci-root/root-witness','ts':ts,'origin':cp.get('origin'),'size':cp.get('size'),
+               'root_sha256':cp.get('root_sha256'),'signer':cp.get('signer'),
+               'witness_sha256':hashlib.sha256(json.dumps(cp,sort_keys=True,ensure_ascii=False).encode()).hexdigest()}
+          json.dump(wit,open('witness-latest.json','w'),ensure_ascii=False,indent=1)
+          print(json.dumps({'size':wit['size'],'wit':wit['witness_sha256'][:12]}))
+          PYEOF
+      - name: commit witness
+        run: |
+          git config user.name root-witness; git config user.email witness@vci-root.local
+          git add witness-latest.json
+          git commit -m "witness: checkpoint cosign $(date -u +%Y%m%d-%H%M) [skip ci]" -q || echo noop
+          git push -q
