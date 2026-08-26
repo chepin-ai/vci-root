@@ -1,11 +1,11 @@
 {
  "witness": "vci-root/root-witness",
- "ts": "2026-08-26T07:33:23Z",
+ "ts": "2026-08-26T13:41:02Z",
  "anchor": {
   "origin": "ci-os/chain",
-  "size": 56,
-  "root_sha256": "f7368cd44a50feb36b892a18420869a730ea34e7ae29b4b48fe6c648094c0b0c",
-  "ts": "2026-08-26T07:31:26Z"
+  "size": 57,
+  "root_sha256": "a4a195fe53f0af79c4b8df5fd7e116fab83dcf9a71b687e4cb238ea62f0a5cd7",
+  "ts": "2026-08-26T13:40:05Z"
  },
- "witness_sha256": "0612f1f0d916ff29b6968a557df0ab7c480176ce590f1b7f4c9c55da36334064"
+ "witness_sha256": "d9b91bb7ea05170b2bf4f092c855af07fc211d6eef9c5941b0d7075b50118774"
 }
