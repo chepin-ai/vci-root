@@ -1,7 +1,7 @@
 name: root-witness
 on:
-  schedule:
-    - cron: '47 */6 * * *'
+  repository_dispatch:
+    types: [root-witness]
   workflow_dispatch:
 permissions:
   contents: write
